@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTML5 Pinball Game</title>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.52.0/dist/phaser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@enable3d/phaser-extension@0.25.4/dist/enable3d.phaserExtension.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@enable3d/phaser-extension@0.25.4/dist/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ammo.js"></script>
 </head>
 <body>
@@ -28,23 +28,19 @@
       create() {
         this.third.warpSpeed("camera", "light");
 
-        // Add ground (pinball table base)
         this.third.physics.add.ground({ width: 20, height: 40, y: -0.5, z: 0 }, { lambert: { color: 0x333333 } });
 
-        // Walls
         const createWall = (x, z, width, height) => {
           this.third.physics.add.box({ x, z, width, height: 1, depth: 1 }, { lambert: { color: 0x555555 } });
         };
-        createWall(-9.5, 0, 1, 40); // Left wall
-        createWall(9.5, 0, 1, 40); // Right wall
-        createWall(0, 19, 20, 1); // Top wall
+        createWall(-9.5, 0, 1, 40);
+        createWall(9.5, 0, 1, 40);
+        createWall(0, 19, 20, 1);
 
-        // Add the ball
         this.ball = this.third.physics.add.sphere({ radius: 0.5, y: 1, z: 15 }, { lambert: { color: 0xffffff } });
         this.ball.body.setRestitution(0.75);
         this.ball.body.setFriction(0.1);
 
-        // Bumpers
         const createBumper = (x, z) => {
           const bumper = this.third.physics.add.sphere(
             { x, z, radius: 1 },
@@ -58,7 +54,6 @@
         createBumper(-4, 7);
         createBumper(4, 7);
 
-        // Flippers
         this.flippers = [];
         const createFlipper = (x, z, rotation, key) => {
           const flipper = this.third.physics.add.box(
@@ -73,18 +68,15 @@
         createFlipper(-3, -10, -0.2, "LEFT");
         createFlipper(3, -10, 0.2, "RIGHT");
 
-        // Add plunger
         this.plunger = this.third.physics.add.box(
           { x: 0, z: 19, width: 1, height: 1, depth: 1 },
           { lambert: { color: 0x0000ff } }
         );
         this.plunger.body.setCollisionFlags(2);
 
-        // Add score and lives display
         this.scoreText = this.add.text(10, 10, "Score: 0", { fontSize: "20px", color: "#ffffff" });
         this.livesText = this.add.text(10, 40, "Lives: 3", { fontSize: "20px", color: "#ffffff" });
 
-        // Input listeners
         this.input.keyboard.on("keydown-LEFT", () => this.activateFlipper("LEFT"));
         this.input.keyboard.on("keydown-RIGHT", () => this.activateFlipper("RIGHT"));
         this.input.on("pointerdown", () => this.launchBall());
@@ -95,12 +87,10 @@
       update() {
         if (!this.ready) return;
 
-        // Follow the ball with the camera
         const pos = this.ball.position;
         this.third.camera.position.lerp(new THREE.Vector3(pos.x, pos.y + 20, pos.z + 20), 0.1);
         this.third.camera.lookAt(pos.x, pos.y, pos.z - 5);
 
-        // Check game over
         if (this.ball.position.z < -20) {
           this.lives -= 1;
           this.livesText.setText(`Lives: ${this.lives}`);
