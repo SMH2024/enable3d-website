@@ -11,13 +11,36 @@
       }
     ],
     "disown-opener": "off",
+<<<<<<< HEAD
     "axe/structure": "off",
+=======
+>>>>>>> 4f51ce80deaf37bb3e1c23535935cb7c38d95b3c
     "axe/name-role-value": [
       "default",
       {
         "link-name": "off"
       }
     ],
+<<<<<<< HEAD
     "no-inline-styles": "off"
+=======
+    "axe/structure": [
+      "default",
+      {
+        "list": "off",
+        "listitem": "off"
+      }
+    ],
+    "no-inline-styles": "off",
+    "highest-available-document-mode": "off",
+    "compat-api/html": [
+      "default",
+      {
+        "ignore": [
+          "script[type=importmap]"
+        ]
+      }
+    ]
+>>>>>>> 4f51ce80deaf37bb3e1c23535935cb7c38d95b3c
   }
 }
