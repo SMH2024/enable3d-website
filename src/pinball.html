@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML5 Pinball Game</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.52.0/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@enable3d/phaser-extension@0.25.4/dist/enable3d.phaserExtension.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ammo.js"></script>
+</head>
+<body>
+  <script>
+    const { Scene3D, enable3d, THREE } = ENABLE3D;
+
+    class PinballGame extends Scene3D {
+      init() {
+        this.accessThirdDimension();
+        this.score = 0;
+        this.lives = 3;
+        this.ready = false;
+      }
+
+      preload() {
+        this.load.image("background", "path/to/background.png");
+        this.load.audio("bounce", "path/to/bounce.mp3");
+      }
+
+      create() {
+        this.third.warpSpeed("camera", "light");
+
+        // Add ground (pinball table base)
+        this.third.physics.add.ground({ width: 20, height: 40, y: -0.5, z: 0 }, { lambert: { color: 0x333333 } });
+
+        // Walls
+        const createWall = (x, z, width, height) => {
+          this.third.physics.add.box({ x, z, width, height: 1, depth: 1 }, { lambert: { color: 0x555555 } });
+        };
+        createWall(-9.5, 0, 1, 40); // Left wall
+        createWall(9.5, 0, 1, 40); // Right wall
+        createWall(0, 19, 20, 1); // Top wall
+
+        // Add the ball
+        this.ball = this.third.physics.add.sphere({ radius: 0.5, y: 1, z: 15 }, { lambert: { color: 0xffffff } });
+        this.ball.body.setRestitution(0.75);
+        this.ball.body.setFriction(0.1);
+
+        // Bumpers
+        const createBumper = (x, z) => {
+          const bumper = this.third.physics.add.sphere(
+            { x, z, radius: 1 },
+            { lambert: { color: 0xff0000 } }
+          );
+          bumper.body.setRestitution(1.2);
+          bumper.isBumper = true;
+          return bumper;
+        };
+        createBumper(0, 5);
+        createBumper(-4, 7);
+        createBumper(4, 7);
+
+        // Flippers
+        this.flippers = [];
+        const createFlipper = (x, z, rotation, key) => {
+          const flipper = this.third.physics.add.box(
+            { x, z, width: 3, height: 0.5, depth: 0.5 },
+            { lambert: { color: 0x00ff00 } }
+          );
+          flipper.body.setCollisionFlags(2);
+          flipper.key = key;
+          flipper.rotation = rotation;
+          this.flippers.push(flipper);
+        };
+        createFlipper(-3, -10, -0.2, "LEFT");
+        createFlipper(3, -10, 0.2, "RIGHT");
+
+        // Add plunger
+        this.plunger = this.third.physics.add.box(
+          { x: 0, z: 19, width: 1, height: 1, depth: 1 },
+          { lambert: { color: 0x0000ff } }
+        );
+        this.plunger.body.setCollisionFlags(2);
+
+        // Add score and lives display
+        this.scoreText = this.add.text(10, 10, "Score: 0", { fontSize: "20px", color: "#ffffff" });
+        this.livesText = this.add.text(10, 40, "Lives: 3", { fontSize: "20px", color: "#ffffff" });
+
+        // Input listeners
+        this.input.keyboard.on("keydown-LEFT", () => this.activateFlipper("LEFT"));
+        this.input.keyboard.on("keydown-RIGHT", () => this.activateFlipper("RIGHT"));
+        this.input.on("pointerdown", () => this.launchBall());
+
+        this.ready = true;
+      }
+
+      update() {
+        if (!this.ready) return;
+
+        // Follow the ball with the camera
+        const pos = this.ball.position;
+        this.third.camera.position.lerp(new THREE.Vector3(pos.x, pos.y + 20, pos.z + 20), 0.1);
+        this.third.camera.lookAt(pos.x, pos.y, pos.z - 5);
+
+        // Check game over
+        if (this.ball.position.z < -20) {
+          this.lives -= 1;
+          this.livesText.setText(`Lives: ${this.lives}`);
+          if (this.lives <= 0) {
+            this.add.text(200, 200, "Game Over", { fontSize: "40px", color: "#ff0000" });
+            this.scene.pause();
+          } else {
+            this.ball.position.set(0, 1, 15);
+            this.ball.body.setVelocity(0, 0, 0);
+          }
+        }
+      }
+
+      activateFlipper(key) {
+        const flipper = this.flippers.find((f) => f.key === key);
+        if (flipper) {
+          flipper.body.setCollisionFlags(0);
+          const torque = key === "LEFT" ? 100 : -100;
+          flipper.body.applyTorque(new THREE.Vector3(0, torque, 0));
+          setTimeout(() => flipper.body.setCollisionFlags(2), 200);
+        }
+      }
+
+      launchBall() {
+        const force = new THREE.Vector3(0, 0, -15);
+        this.ball.body.applyForce(force);
+      }
+    }
+
+    const config = {
+      type: Phaser.WEBGL,
+      scene: [PinballGame],
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+      physics: {
+        default: "arcade",
+      },
+    };
+
+    window.addEventListener("load", () => {
+      enable3d(() => new Phaser.Game(config)).withPhysics("https://cdn.jsdelivr.net/npm/ammo.js");
+    });
+  </script>
+</body>
+</html>
