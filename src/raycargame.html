@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Isometric Racing Game</title>
+    <link rel="stylesheet" href="/css/examples.css?ver=1.0.0" />
+    <script src="/js/examples.js?ver=1.1.1"></script>
+    <script src="/lib/phaser.min.js?ver=3.52.0"></script>
+    <script src="/lib/enable3d/enable3d.phaserExtension.0.25.4.min.js"></script>
+  </head>
+  <body>
+    <script>
+      const { enable3d, Scene3D, Canvas, THREE } = ENABLE3D;
+
+      class RacingScene extends Scene3D {
+        constructor() {
+          super({ key: 'RacingScene' });
+        }
+
+        init() {
+          const frustumSize = 20;
+          const aspect = this.cameras.main.width / this.cameras.main.height;
+
+          // Setting up the camera
+          this.third.add.existingCamera(
+            new THREE.OrthographicCamera(
+              (frustumSize * aspect) / -2,
+              (frustumSize * aspect) / 2,
+              frustumSize / 2,
+              (frustumSize / -2)
+            )
+          );
+        }
+
+        async create() {
+          this.third.warpSpeed('-camera');
+
+          // Position camera
+          this.third.camera.position.set(20, 20, 20);
+          this.third.camera.lookAt(0, 0, 0);
+
+          // Add ground plane
+          this.third.add.plane(
+            { width: 100, height: 100, y: -0.5, rotation: { x: -Math.PI / 2 } },
+            { lambert: { color: 0x00ff00 } }
+          );
+
+          // Add a simple track layout
+          this.createTrack();
+
+          // Add a racing car
+          this.car = this.third.add.box(
+            { x: 0, y: 0.5, z: 0, width: 1, height: 0.5, depth: 2 },
+            { lambert: { color: 0x0000ff } }
+          );
+
+          this.carSpeed = 0.1;
+
+          // Add controls
+          this.cursors = this.input.keyboard.createCursorKeys();
+        }
+
+        createTrack() {
+          // Simple placeholder track (can be enhanced later)
+          this.third.add.box(
+            { x: 0, y: 0, z: -5, width: 10, height: 0.1, depth: 50 },
+            { lambert: { color: 0x888888 } }
+          );
+        }
+
+        update() {
+          // Car movement logic
+          if (this.cursors.up.isDown) {
+            this.car.position.z -= this.carSpeed;
+          }
+          if (this.cursors.down.isDown) {
+            this.car.position.z += this.carSpeed;
+          }
+          if (this.cursors.left.isDown) {
+            this.car.position.x -= this.carSpeed;
+          }
+          if (this.cursors.right.isDown) {
+            this.car.position.x += this.carSpeed;
+          }
+        }
+      }
+
+      // Phaser configuration
+      const config = {
+        type: Phaser.WEBGL,
+        parent: 'game',
+        width: 800,
+        height: 600,
+        scene: [RacingScene],
+        physics: {
+          default: 'arcade',
+        },
+      };
+
+      // Launch the game
+      enable3d(() => new Phaser.Game(config)).withPhysics();
+    </script>
+  </body>
+</html>
