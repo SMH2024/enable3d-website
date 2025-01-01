@@ -12,6 +12,7 @@
     <script src="/js/examples.js?ver=1.1.1"></script>
     <script src="/lib/phaser.min.js?ver=3.52.0"></script>
     <script src="/lib/enable3d/enable3d.phaserExtension.0.25.4.min.js"></script>
+    <script src="/lib/ammo.wasm.js"></script> <!-- Ensure Ammo.js is loaded -->
   </head>
   <body>
     <script>
@@ -39,6 +40,12 @@
 
         async create() {
           this.third.warpSpeed('-camera');
+
+          // Ensure Ammo.js is loaded
+          if (!Ammo) {
+            console.error('Ammo.js is not loaded!');
+            return;
+          }
 
           // Position camera
           this.third.camera.position.set(20, 20, 20);
@@ -98,12 +105,15 @@
         height: 600,
         scene: [RacingScene],
         physics: {
-          default: 'arcade',
+          default: 'ammo',
+          ammo: {
+            path: '/lib/', // Path to Ammo.js files
+          },
         },
       };
 
       // Launch the game
-      enable3d(() => new Phaser.Game(config)).withPhysics();
+      enable3d(() => new Phaser.Game(config)).withPhysics(config);
     </script>
   </body>
 </html>
