@@ -195,7 +195,7 @@
           this.physics.add.ground({ y: -1, width: 100, height: 100 }, { lambert: { map: grassGround } })
 
           const ramp = this.add.box({ width: 5, height: 10, z: -20 }, { lambert: { map: grass } })
-          ramp.rotateX(-Math.PI / 3)
+          ramp.rotateX(-Math.PI / 4)
           this.physics.add.existing(ramp, { collisionFlags: 1, mass: 0 })
 
           const gltf = await this.load.gltf('/assets/glb/car.glb')
