@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Race with Track</title>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/cannon.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+
+        const createScene = () => {
+            const scene = new BABYLON.Scene(engine);
+
+            // Enable physics
+            scene.enablePhysics(new BABYLON.Vector3(0, -9.81, 0), new BABYLON.CannonJSPlugin());
+
+            // Create camera
+            const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 100, new BABYLON.Vector3(0, 10, 0), scene);
+            camera.attachControl(canvas, true);
+
+            // Add lights
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+            // Add ground
+            const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
+            const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+            groundMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.8, 0.5);
+            ground.material = groundMaterial;
+            ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0 }, scene);
+
+            // Load the racetrack GLB
+            BABYLON.SceneLoader.ImportMesh("", "/assets/glb/", "low_poly_race_track.glb", scene, (meshes) => {
+                const racetrack = meshes[0]; // Assume the first mesh is the main track
+                racetrack.scaling = new BABYLON.Vector3(1, 1, 1); // Adjust if needed
+                racetrack.position = new BABYLON.Vector3(0, 0, 0);
+
+                // Apply physics to the racetrack
+                racetrack.physicsImpostor = new BABYLON.PhysicsImpostor(racetrack, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0 }, scene);
+            });
+
+            // Create car
+            const car = BABYLON.MeshBuilder.CreateBox("car", { height: 1, width: 2, depth: 4 }, scene);
+            car.position = new BABYLON.Vector3(0, 5, 0); // Adjust starting position
+            car.physicsImpostor = new BABYLON.PhysicsImpostor(car, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 1, friction: 0.5, restitution: 0.2 }, scene);
+
+            // Car controls
+            const inputMap = {};
+            scene.actionManager = new BABYLON.ActionManager(scene);
+            scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, (evt) => {
+                inputMap[evt.sourceEvent.key] = true;
+            }));
+            scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, (evt) => {
+                inputMap[evt.sourceEvent.key] = false;
+            }));
+
+            const carSpeed = 0.1;
+            const carTurnSpeed = 0.03;
+
+            scene.onBeforeRenderObservable.add(() => {
+                const forward = new BABYLON.Vector3(Math.sin(car.rotation.y), 0, Math.cos(car.rotation.y));
+
+                if (inputMap["w"]) {
+                    car.physicsImpostor.setLinearVelocity(forward.scale(carSpeed));
+                }
+                if (inputMap["s"]) {
+                    car.physicsImpostor.setLinearVelocity(forward.scale(-carSpeed));
+                }
+                if (inputMap["a"]) {
+                    car.rotation.y -= carTurnSpeed;
+                }
+                if (inputMap["d"]) {
+                    car.rotation.y += carTurnSpeed;
+                }
+            });
+
+            return scene;
+        };
+
+        const scene = createScene();
+
+        // Run the render loop
+        engine.runRenderLoop(() => {
+            scene.render();
+        });
+
+        // Resize the engine on window resize
+        window.addEventListener("resize", () => {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
