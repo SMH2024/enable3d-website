@@ -3,106 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Babylon.js - Slide as Ground</title>
-    <script type="module">
-        import * as BABYLON from "https://cdn.jsdelivr.net/npm/@babylonjs/core@5.0.0/index.min.js";
-        import "https://cdn.jsdelivr.net/npm/@babylonjs/loaders@5.0.0/index.min.js";
-
-        async function createScene(engine, canvas) {
-            const scene = new BABYLON.Scene(engine);
-
-            // Enable physics with Cannon.js
-            const gravityVector = new BABYLON.Vector3(0, -9.81, 0);
-            const physicsPlugin = new BABYLON.CannonJSPlugin();
-            scene.enablePhysics(gravityVector, physicsPlugin);
-
-            // Create camera
-            const camera = new BABYLON.ArcRotateCamera(
-                "camera",
-                -Math.PI / 2,
-                Math.PI / 3,
-                50,
-                BABYLON.Vector3.Zero(),
-                scene
-            );
-            camera.attachControl(canvas, true);
-
-            // Add a hemispheric light
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-            light.intensity = 0.7;
-
-            // Load slide.glb as ground
-            const container = await BABYLON.SceneLoader.LoadAssetContainerAsync(
-                "src/assets/glb/slide.glb", // Replace with your actual path
-                "",
-                scene
-            );
-
-            const slide = container.meshes[0]; // Ensure this references the correct mesh
-            if (slide) {
-                slide.scaling = new BABYLON.Vector3(10, 10, 10); // Scale the slide
-                slide.position.y = 0; // Align to ground level
-                slide.physicsImpostor = new BABYLON.PhysicsImpostor(
-                    slide,
-                    BABYLON.PhysicsImpostor.MeshImpostor,
-                    { mass: 0, friction: 0.8, restitution: 0.5 },
-                    scene
-                );
-
-                container.addAllToScene();
-                console.log("Slide successfully loaded and configured.");
-            } else {
-                console.error("Slide mesh not found in the container.");
-            }
-
-            // Create marbles
-            for (let i = 0; i < 4; i++) {
-                const marble = BABYLON.MeshBuilder.CreateSphere(`marble${i}`, { diameter: 1 }, scene);
-                marble.position = new BABYLON.Vector3(-3 + i * 2, 5, 0);
-                marble.physicsImpostor = new BABYLON.PhysicsImpostor(
-                    marble,
-                    BABYLON.PhysicsImpostor.SphereImpostor,
-                    { mass: 1, friction: 0.2, restitution: 0.7 },
-                    scene
-                );
-            }
-
-            return scene;
-        }
-
-        // Set up the Babylon.js engine and canvas
-        const canvas = document.getElementById("renderCanvas");
-        const engine = new BABYLON.Engine(canvas, true);
-
-        // Create and render the scene
-        createScene(engine, canvas).then((scene) => {
-            engine.runRenderLoop(() => {
-                scene.render();
-            });
-        });
-
-        // Handle window resize
-        window.addEventListener("resize", () => {
-            engine.resize();
-        });
-    </script>
+    <title>Three.js GLB Viewer</title>
     <style>
-        html, body {
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        #renderCanvas {
-            width: 100%;
-            height: 100%;
-            touch-action: none;
-        }
     </style>
 </head>
 <body>
-    <canvas id="renderCanvas"></canvas>
+    <script type="module">
+        
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+
+// Initialize loading manager
+const loadingManager = new THREE.LoadingManager();
+let assetsLoaded = false;
+
+// Create loading screen
+const loadingScreen = document.createElement('div');
+loadingScreen.style.cssText = `
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+`;
+loadingScreen.innerText = 'Loading... 0%';
+document.body.appendChild(loadingScreen);
+
+loadingManager.onProgress = (url, loaded, total) => {
+  loadingScreen.innerText = `Loading... ${(loaded / total) * 100}%`;
+};
+
+loadingManager.onLoad = () => {
+  assetsLoaded = true;
+  loadingScreen.style.display = 'none';
+};
+
+// Create scene and camera
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 50, 100);
+camera.lookAt(0, 0, 0);
+
+// Renderer
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+
+// Post-processing
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.2, // Strength
+  0.4, // Radius
+  0.9  // Threshold
+);
+composer.addPass(bloomPass);
+
+const smaaPass = new SMAAPass(
+  window.innerWidth * renderer.getPixelRatio(),
+  window.innerHeight * renderer.getPixelRatio()
+);
+composer.addPass(smaaPass);
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+sunLight.position.set(50, 100, -50);
+sunLight.castShadow = true;
+scene.add(sunLight);
+
+// Skybox
+const skyGeo = new THREE.SphereGeometry(500, 32, 15);
+const skyMat = new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide });
+const sky = new THREE.Mesh(skyGeo, skyMat);
+scene.add(sky);
+
+// Terrain
+const terrainGeo = new THREE.PlaneGeometry(200, 200);
+const terrainMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
+const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+terrain.rotation.x = -Math.PI / 2;
+terrain.receiveShadow = true;
+scene.add(terrain);
+
+// OrbitControls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.1;
+
+// Animation Loop
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  composer.render();
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+});
+
+animate();
+
+    </script>
 </body>
 </html>
