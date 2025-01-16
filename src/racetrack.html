@@ -7,63 +7,111 @@
       content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>GLTF Loader and Animations</title>
-    <link rel="stylesheet" href="/css/examples.css?ver=1.0.0" />
-    <script src="/js/examples.js?ver=1.1.1"></script>
+    <title>Car Movement with Arrow Keys</title>
     <script src="/lib/enable3d/enable3d.framework.0.25.4.min.js"></script>
   </head>
 
   <body>
     <script>
-      const { Project, Scene3D, PhysicsLoader, ExtendedObject3D, THREE } = ENABLE3D
+      const { Project, Scene3D, ExtendedObject3D } = ENABLE3D;
 
       class MainScene extends Scene3D {
+        constructor() {
+          super({ key: 'MainScene' });
+          this.inputKeys = { forward: false, backward: false, left: false, right: false }; // Track input
+        }
+
         async create() {
-          this.warpSpeed()
-          this.camera.position.set(2, 2, 4)
+          this.warpSpeed();
+          this.camera.position.set(8, 12, 16);
 
-          this.load.gltf('/assets/glb/track.glb').then(gltf => {
-            const child = gltf.scene.children[0]
+          // Load the track
+          this.load.gltf('/assets/glb/track.glb').then((gltf) => {
+            const track = gltf.scene.children[0];
+            track.scale.set(0.5, 0.5, 0.5);
+            track.position.set(1, 1, 1);
+            this.scene.add(track);
 
-            child.scale.set(1.5, 1.5, 1.5);
-            child.position.set(0, 5, 0);
+            // Load the car
+            this.load.gltf('/assets/glb/carf1.glb').then((carGltf) => {
+              const car = carGltf.scene.children[0];
+              car.scale.set(0.003, 0.003, 0.003);
+              car.position.set(5.5, 1.0, 1.0);
 
-            const boxMan = new ExtendedObject3D()
-            boxMan.add(child)
-            this.scene.add(boxMan)
+              const carObject = new ExtendedObject3D();
+              carObject.add(car);
+              this.scene.add(carObject);
 
-            let i = 0
-            let anims = ['run', 'sprint', 'jump_running', 'idle', 'driving', 'falling']
+              this.carObject = carObject; // Store reference for movement
+            });
+          });
 
-            // ad the box man's animation mixer to the animationMixers array (for auto updates)
-            this.animationMixers.add(boxMan.animation.mixer)
+          // Add event listeners for input
+          this.setupControls();
+        }
 
-            gltf.animations.forEach(animation => {
-              if (animation.name) {
-                // add a new animation to the box man
-                boxMan.animation.add(animation.name, animation)
-              }
-            })
-
-            // play the run animation
-            boxMan.animation.play('idle')
-
-            const nextAnimation = time => {
-              setTimeout(() => {
-                i++
-                let next = anims[i % 5]
-                boxMan.animation.play(next, 200, next === 'jump_running' ? false : true)
-                console.log('current animation', boxMan.animation.current)
-                nextAnimation(next === 'jump_running' ? 650 : 2500)
-              }, time)
+        setupControls() {
+          window.addEventListener('keydown', (event) => {
+            switch (event.code) {
+              case 'ArrowUp':
+                this.inputKeys.forward = true;
+                break;
+              case 'ArrowDown':
+                this.inputKeys.backward = true;
+                break;
+              case 'ArrowLeft':
+                this.inputKeys.left = true;
+                break;
+              case 'ArrowRight':
+                this.inputKeys.right = true;
+                break;
             }
+          });
 
-            nextAnimation(2500)
-          })
+          window.addEventListener('keyup', (event) => {
+            switch (event.code) {
+              case 'ArrowUp':
+                this.inputKeys.forward = false;
+                break;
+              case 'ArrowDown':
+                this.inputKeys.backward = false;
+                break;
+              case 'ArrowLeft':
+                this.inputKeys.left = false;
+                break;
+              case 'ArrowRight':
+                this.inputKeys.right = false;
+                break;
+            }
+          });
+        }
+
+        update(time, delta) {
+          if (!this.carObject) return;
+
+          const speed = 0.05; // Movement speed
+          const rotationSpeed = 0.03;
+          const Turning = true; // Turning speed
+
+          // Move forward or backward
+          if (this.inputKeys.forward) {
+            this.carObject.position.z -= speed; // Move forward
+          }
+          if (this.inputKeys.backward) {
+            this.carObject.position.z += speed; // Move backward
+          }
+
+          // Turn left or right
+          if (this.inputKeys.left) {
+            this.carObject.rotation.y += rotationSpeed; // Turn left
+          }
+          if (this.inputKeys.right) {
+            this.carObject.rotation.y -= rotationSpeed; // Turn right
+          }
         }
       }
 
-      new Project({ scenes: [MainScene] })
+      new Project({ scenes: [MainScene] });
     </script>
   </body>
 </html>

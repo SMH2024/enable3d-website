@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Wrecking Ball with Metal Chain</title>
+    <link rel="stylesheet" href="/css/examples.css?ver=1.0.0" />
+    <script src="/js/examples.js?ver=1.1.1"></script>
+    <script src="/lib/phaser.min.js?ver=3.52.0"></script>
+    <script src="/lib/enable3d/enable3d.phaserExtension.0.25.4.min.js"></script>
+  </head>
+
+  <body>
+    <script>
+
+      const { enable3d, Scene3D, Canvas } = ENABLE3D;
+
+      class SlingshotScene extends Scene3D {
+        constructor() {
+          super({ key: 'SlingshotScene' });
+        }
+
+        init() {
+          this.accessThirdDimension({ gravity: { x: 0, y: -30, z: 0 } });
+        }
+
+        create() {
+          this.third.warpSpeed();
+          this.third.camera.position.set(0, 20, 50);
+          this.third.camera.lookAt(0, 10, 0);
+
+          // Anchors for the slingshot
+          const anchorLeft = this.third.physics.add.sphere(
+            { mass: 0, radius: 0.5, x: -5, y: 10, z: 0 },
+            { standard: { color: 0xff0000 } }
+          );
+          const anchorRight = this.third.physics.add.sphere(
+            { mass: 0, radius: 0.5, x: 5, y: 10, z: 0 },
+            { standard: { color: 0xff0000 } }
+          );
+
+          // Projectile (the ball to launch)
+          const ball = this.third.physics.add.sphere(
+            { mass: 2, radius: 1, x: 0, y: 8, z: 0 },
+            { standard: { color: 0x00ff00, roughness: 0.5, metalness: 0.5 } }
+          );
+
+          // Elastic band (spring constraints)
+          this.third.physics.add.constraints.spring(
+            anchorLeft.body,
+            ball.body,
+            { stiffness: 10, damping: 0.1 }
+          );
+          this.third.physics.add.constraints.spring(
+            anchorRight.body,
+            ball.body,
+            { stiffness: 10, damping: 0.1 }
+          );
+
+          // Ground for the ball to land
+          this.third.physics.add.ground(
+            { width: 50, height: 50 },
+            { standard: { color: 0xaaaaaa } }
+          );
+
+          // User interaction: Drag and release
+          this.input.on('pointerdown', () => {
+            this.isDragging = true;
+          });
+
+          this.input.on('pointermove', (pointer) => {
+            if (this.isDragging) {
+              const worldPoint = this.third.pointerToWorld(pointer.x, pointer.y);
+              ball.body.position.set(worldPoint.x, worldPoint.y, 0);
+              ball.body.velocity.set(0, 0, 0); // Reset velocity while dragging
+            }
+          });
+
+          this.input.on('pointerup', () => {
+            this.isDragging = false;
+          });
+        }
+
+        update() {
+          if (!this.isDragging) {
+            this.third.physics.world.step(1 / 60);
+          }
+        }
+      }
+
+      const config = {
+        type: Phaser.WEBGL,
+        transparent: true,
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+          width: window.innerWidth,
+          height: window.innerHeight,
+        },
+        scene: [SlingshotScene],
+        ...Canvas(),
+      };
+
+      window.addEventListener('load', () => {
+        enable3d(() => new Phaser.Game(config)).withPhysics('https://cdn.jsdelivr.net/npm/enable3d@0.25.4/dist/ammo/kripken');
+      });
+    </script>
+  </body>
+</html>

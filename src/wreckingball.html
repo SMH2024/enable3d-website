@@ -44,22 +44,34 @@
             // ball
             if (i === 2) {
               let ball = this.third.physics.add.sphere(
-                { mass: 2, radius: 2, x: -20.8, y: 22 },
+                { mass: 4, radius: 2, x: -20.8, y: 22 },
                 { standard: { emissive: 0x222222, roughness: 0.4, metalness: 1 } }
               )
-              this.third.physics.add.constraints.lock(t2.body, ball.body)
+              this.third.physics.add.constraints.lock(t2.body, ball.body)       
+              
+              let box1 = this.third.physics.add.box({ mass: 0, width: 2, height: 2, depth: 2, x: 0, y: 10 });
+let box2 = this.third.physics.add.box({ mass: 2, width: 1, height: 1, depth: 1, x: 0, y: 7 });
+
+this.third.physics.add.constraints.pointToPoint(box1.body, box2.body, {
+  pivotA: { x: 0, y: -1, z: 0 }, // Point on box1
+  pivotB: { x: 0, y: -10, z: 0 }   // Point on box2
+});
+              
             }
           }
 
           // wall
-          for (let y = 0; y <= 6; y += 2) {
+          for (let y = 0; y <= 8; y += 2) {
             for (let z = -4; z <= 2; z += 2) {
               for (let x = 0; x <= 2; x += 2) {
                 this.third.physics.add.box({ x, y, z, width: 1.95, height: 1.95, depth: 1.95, mass: 0.4 })
               }
-            }
+            }            
           }
         }
+
+
+        
       }
 
       const config = {
