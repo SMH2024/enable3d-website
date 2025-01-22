@@ -20,9 +20,52 @@
       class MainScene extends Scene3D {
         async create() {
           this.warpSpeed()
-          this.camera.position.set(2, 2, 4)
+          this.camera.position.set(20, 26, -4)
 
-          this.load.gltf('/assets/glb/box_man.glb').then(gltf => {
+          this.load.gltf('/assets/glb/wombat3.glb').then((wombatGltf) => {
+            const wombat = wombatGltf.scene.children[0];
+            wombat.scale.set(1.0, 1.0, 1.0);
+            wombat.position.set(0, 13.5, -10.0);
+
+            const wombatObject = new ExtendedObject3D();
+            wombatObject.add(wombat);
+            this.scene.add(wombatObject);
+
+            // Enable physics for wombat
+            this.physics.add.existing(wombatObject, { mass: 5 });
+            wombatObject.body.setGravity(0, -9.8, 0);
+            wombatObject.body.setFriction(0.1);
+
+            // Add force to simulate movement
+            wombatObject.body.applyForceX(16);
+
+            this.wombatObject = wombatObject;
+
+            // Add event listener for spacebar press
+            window.addEventListener('keydown', (event) => {
+              if (event.code === 'Space') {
+                console.log('Spacebar pressed - Applying force to wombat');
+                wombatObject.body.applyForce(500, 100, 100); // Launch forward
+              }
+            });
+
+            wombatObject.jump = function() {
+              console.log('Jump function called');
+              this.body.applyForceY(16);
+            };
+
+            // Add event listener for jump (e.g., pressing "J")
+            window.addEventListener('keydown', (event) => {
+              if (event.code === 'KeyJ') {
+                wombatObject.jump();
+              }
+            });
+            wombatObject.body.setAwake(true);
+
+          });
+          
+
+          this.load.gltf('/assets/glb/realslide2.glb').then(gltf => {
             const child = gltf.scene.children[0]
 
             const boxMan = new ExtendedObject3D()

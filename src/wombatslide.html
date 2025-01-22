@@ -38,7 +38,7 @@
         }
 
         preload() {
-          this.load.html('bridge', '/assets/svg/bridge.svg');
+          this.load.html('bridge', '/assets/glb/track.glb');
         }
 
         init() {
@@ -55,7 +55,7 @@
           this.third.warpSpeed('camera', 'sky', 'grid', 'ground', 'light', 'orbitControls');
 
           // Load player model and set up controls
-          this.third.load.gltf('/assets/glb/wombat2.glb').then(gltf => {
+          this.third.load.gltf('/assets/glb/wombat3.glb').then(gltf => {
             const model = gltf.scene;
             this.man = new ExtendedObject3D();
             this.man.add(model);
@@ -63,6 +63,8 @@
        
             this.man.rotation.y += Math.PI; // Rotate to face the opposite direction
             this.man.scale.x = -1;
+
+            
 
             // Add physics to the model
             this.third.physics.add.existing(this.man, { shape: 'box', mass: 1 });
@@ -75,7 +77,8 @@
             });
 
             // Adjust camera position
-            this.third.camera.position.set(0, 5, 10);
+            this.third.camera.position.set(8, 12, 16);
+            this.third.camera.rotation.y.set(0, Math.PI / 2, 0);
             this.third.camera.lookAt(this.man.position);
           });
 
